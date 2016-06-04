@@ -8,23 +8,37 @@
     mc:Ignorable="d">
 
     <StackPanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <TextBox Name="InputTextBox" 
+        <TextBlock Margin="5 5 5 0">JSON Input:</TextBlock>
+        <TextBox Name="InputTextBox"
                  AcceptsReturn="True"
                  Margin="5"
                  MinHeight="300"
                  MaxHeight="300" />
         <StackPanel Orientation="Horizontal">
+            <TextBlock Margin="5 0 5 5"
+                       VerticalAlignment="Center">Test Count:</TextBlock>
+            <TextBox Name="RepeatTextBox" 
+                     Text="1000"
+                     Width="30" 
+                     VerticalAlignment="Center" />
             <Button Name="SubmitButton"
                     Content="Submit"
                     Click="SubmitButton_Click" 
-                    Margin="5 0 5 5" />
+                    Margin="5 0 5 5"
+                    VerticalAlignment="Center" />
             <Button Name="ClearButton"
                     Content="Clear"
                     Click="ClearButton_Click"
-                    Margin="0 0 5 5" />
+                    Margin="0 0 5 5"
+                    VerticalAlignment="Center" />
+            <ProgressRing Name="TestingProgressRing"
+                          IsActive="False"
+                          VerticalAlignment="Center" />
         </StackPanel>
+        <TextBlock Margin="5 0 5 5">Results:</TextBlock>
         <TextBox Name="OutputTextBlock"
                  AcceptsReturn="True"
+                 Margin="5 0 5 5"
                  MinHeight="300"
                  MaxHeight="300" />
     </StackPanel>

@@ -9,8 +9,10 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -33,58 +35,79 @@ namespace PerformanceTest
             this.InitializeComponent();
         }
 
-        private void SubmitButton_Click(object sender, RoutedEventArgs e)
+        private async void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputTextBlock.Text = Run();
+            TestingProgressRing.IsActive = true;
+            var output = await RunAsync();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                OutputTextBlock.Text = output;
+                TestingProgressRing.IsActive = false;
+            });
         }
 
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        private async void ClearButton_Click(object sender, RoutedEventArgs e)
         {
+            TestingProgressRing.IsActive = true;
             InputTextBox.Text = "";
-            OutputTextBlock.Text = Run();
+            var output = await RunAsync();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                OutputTextBlock.Text = output;
+                TestingProgressRing.IsActive = false;
+            });
         }
 
-        private string Run()
+        private Task<string> RunAsync()
         {
             var json = InputTextBox.Text;
-            if (string.IsNullOrWhiteSpace(json))
+            var repeat = int.Parse(RepeatTextBox.Text);
+
+            return Task.Run(() =>
             {
-                return "";
-            }
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return "";
+                }
 
-            var sb = new StringBuilder();
+                var sb = new StringBuilder();
 
-            using (var runtime = JavaScriptRuntime.Create())
-            {
-                var context = runtime.CreateContext();
-                JavaScriptContext.Current = context;
+                using (var runtime = JavaScriptRuntime.Create())
+                {
+                    var context = runtime.CreateContext();
+                    JavaScriptContext.Current = context;
 
-                var test = new Test(runtime, 1000);
-                var parseConverter = new JsonParseConverter();
-                var stringifyConverter = new JsonStringifyConverter();
-                var dotNetValue = JToken.Parse(json);
-                var chakraValue = parseConverter.Convert(dotNetValue);
-                
-                sb.AppendLine("Json.NET -> Chakra with JSON.parse");
-                RunDotNetToChakra(dotNetValue, test, parseConverter.Convert);
-                sb.AppendLine(test.ToString());
+                    var test = new Test(runtime, repeat);
+                    var parseConverter = new JsonParseConverter();
+                    var stringifyConverter = new JsonStringifyConverter();
+                    var dotNetValue = JToken.Parse(json);
+                    var chakraValue = parseConverter.Convert(dotNetValue);
 
-                sb.AppendLine("Chakra -> Json.NET with JSON.stringify");
-                RunChakraToDotNet(chakraValue, test, stringifyConverter.Convert);
-                sb.AppendLine(test.ToString());
+                    sb.AppendLine("Json.NET -> Chakra with JSON.parse");
+                    sb.AppendLine("----------------------------------");
+                    RunDotNetToChakra(dotNetValue, test, parseConverter.Convert);
+                    sb.AppendLine(test.ToString());
 
-                //sb.AppendLine("Json.NET -> Chakra with object model");
-                //RunDotNetToChakra(dotNetValue, test, JTokenToJavaScriptValueConverter.Convert);
-                //sb.AppendLine(test.ToString());
+                    sb.AppendLine("Chakra -> Json.NET with JSON.stringify");
+                    sb.AppendLine("--------------------------------------");
+                    RunChakraToDotNet(chakraValue, test, stringifyConverter.Convert);
+                    sb.AppendLine(test.ToString());
 
-                sb.AppendLine("Chakra -> Json.NET with object model");
-                RunChakraToDotNet(chakraValue, test, JavaScriptValueToJTokenConverter.Convert);
-                sb.AppendLine(test.ToString());
+                    sb.AppendLine("Json.NET -> Chakra with object model");
+                    sb.AppendLine("------------------------------------");
+                    RunDotNetToChakra(dotNetValue, test, JTokenToJavaScriptValueConverter.Convert);
+                    sb.AppendLine(test.ToString());
 
-                JavaScriptContext.Current = JavaScriptContext.Invalid;
-            }
+                    sb.AppendLine("Chakra -> Json.NET with object model");
+                    sb.AppendLine("------------------------------------");
+                    RunChakraToDotNet(chakraValue, test, JavaScriptValueToJTokenConverter.Convert);
+                    sb.AppendLine(test.ToString());
 
-            return sb.ToString();
+                    JavaScriptContext.Current = JavaScriptContext.Invalid;
+                }
+
+                return sb.ToString();
+            });
         }
 
         private void RunDotNetToChakra(JToken value, Test test, Func<JToken, JavaScriptValue> func)

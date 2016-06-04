@@ -57,16 +57,11 @@ namespace ChakraDataMarshaling
         private JavaScriptValue VisitArray(JArray token)
         {
             var n = token.Count;
-            var values = new JavaScriptValue[n];
-            for (var i = 0; i < n; ++i)
-            {
-                values[i] = Visit(token[i]);
-            }
-
             var array = JavaScriptValue.CreateArray((uint)n);
             for (var i = 0; i < n; ++i)
             {
-                array.SetIndexedProperty(JavaScriptValue.FromInt32(i), values[i]);
+                var element = Visit(token[i]);
+                array.SetIndexedProperty(JavaScriptValue.FromInt32(i), element);
             }
 
             return array;
